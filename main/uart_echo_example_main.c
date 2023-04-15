@@ -701,7 +701,8 @@ void task2()
     }
 }
 
-extern "C" void app_main(void)
+
+void app_main(void)
 {
     /*
 
@@ -711,7 +712,7 @@ extern "C" void app_main(void)
 
     ESP_ERROR_CHECK(nvs_flash_init());
     
-   bt_init_fn();
+    bt_init_fn();
 
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
