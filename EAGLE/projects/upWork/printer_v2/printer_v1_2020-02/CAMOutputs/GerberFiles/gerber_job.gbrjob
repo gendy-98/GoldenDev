@@ -1,0 +1,24 @@
+{
+    "Header": {
+        "Comment": "All values are metric (mm)",
+        "CreationDate": "2020-02-25T21:12:26Z",
+        "GenerationSoftware": {
+            "Application": "EAGLE",
+            "Vendor": "Autodesk",
+            "Version": "9.5.1"
+        },
+        "Part": "Single"
+    },
+    "Overall": {
+        "BoardThickness": 1.57,
+        "LayerNumber": 2,
+        "Name": {
+            "ProjectId": "printer_v1"
+        },
+        "Owner": "Ahmed Gendy <ahmed.gendy98@eng-st.cu.edu.eg>",
+        "Size": {
+            "X": 96.5,
+            "Y": 100
+        }
+    }
+}
