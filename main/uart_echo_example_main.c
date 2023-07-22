@@ -27,9 +27,8 @@
 #include "enc_init.h"
 #include "funcs.h"
 
-
 #include "bt_init.h"
-
+#include "esp_log.h"
 /*
 #include "esp_heap_trace.h"
 #include "esp_heap_caps.h"
@@ -43,23 +42,23 @@ int ii = 0;
 #define PORT 99
 int sock;
 bool flag_sock = true;
-//TaskHandle_t xEthHandle = NULL;
-//TaskHandle_t xTaskHandle = NULL;
+// TaskHandle_t xEthHandle = NULL;
+// TaskHandle_t xTaskHandle = NULL;
 #define TCP_TASK_DEBUGsd
 static void tcp_server_task(void *pvParameters)
 {
-    
+
     char addr_str[128];
-    
+
     int ip_protocol = 0;
     struct sockaddr_in6 dest_addr;
-    #ifdef CONFIG_EXAMPLE_IPV4
-        int addr_family = AF_INET;
-        //printf("########################version 4 ######################\n");
-    #else
-        //printf("########################version 6 ######################3");
-        int addr_family = AF_INET6;
-    #endif
+#ifdef CONFIG_EXAMPLE_IPV4
+    int addr_family = AF_INET;
+    // printf("########################version 4 ######################\n");
+#else
+    // printf("########################version 6 ######################3");
+    int addr_family = AF_INET6;
+#endif
 
     char buffer[6];
     memset(buffer, 0, 6);
@@ -73,53 +72,54 @@ static void tcp_server_task(void *pvParameters)
         sprintf(buffer, "%05d", count);
         write_file("C", buffer);
     }
-    //caloc(buffer);
+    // caloc(buffer);
 
-
-    if (addr_family == AF_INET) {
+    if (addr_family == AF_INET)
+    {
         struct sockaddr_in *dest_addr_ip4 = (struct sockaddr_in *)&dest_addr;
         dest_addr_ip4->sin_addr.s_addr = htonl(INADDR_ANY);
         dest_addr_ip4->sin_family = AF_INET;
         dest_addr_ip4->sin_port = htons(PORT);
         ip_protocol = IPPROTO_IP;
-    } else if (addr_family == AF_INET6) {
+    }
+    else if (addr_family == AF_INET6)
+    {
         bzero(&dest_addr.sin6_addr.un, sizeof(dest_addr.sin6_addr.un));
         dest_addr.sin6_family = AF_INET6;
         dest_addr.sin6_port = htons(PORT);
         ip_protocol = IPPROTO_IPV6;
     }
 
-
     int listen_sock = socket(addr_family, SOCK_STREAM, ip_protocol);
 
     if (listen_sock < 0)
     {
-        //ESP_LOGE(TAG, "UM77 Unable to create socket: errno %d", errno);
+        // ESP_LOGE(TAG, "UM77 Unable to create socket: errno %d", errno);
         vTaskDelete(NULL);
         return;
     }
-    #if defined(CONFIG_EXAMPLE_IPV4) && defined(CONFIG_EXAMPLE_IPV6)
+#if defined(CONFIG_EXAMPLE_IPV4) && defined(CONFIG_EXAMPLE_IPV6)
     // Note that by default IPV6 binds to both protocols, it is must be disabled
     // if both protocols used at the same time (used in CI)
     int opt = 1;
     setsockopt(listen_sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
     setsockopt(listen_sock, IPPROTO_IPV6, IPV6_V6ONLY, &opt, sizeof(opt));
-    #endif
-    //ESP_LOGI(TAG, "UM81 Socket created");
+#endif
+    // ESP_LOGI(TAG, "UM81 Socket created");
 
     int err = bind(listen_sock, (struct sockaddr *)&dest_addr, sizeof(dest_addr));
     if (err != 0)
     {
-        //ESP_LOGE(TAG, "UM97 Socket unable to bind: errno %d", errno);
-        //ESP_LOGE(TAG, "UM98 IPPROTO: %d", addr_family);
+        // ESP_LOGE(TAG, "UM97 Socket unable to bind: errno %d", errno);
+        // ESP_LOGE(TAG, "UM98 IPPROTO: %d", addr_family);
         goto CLEAN_UP;
     }
-    //ESP_LOGI(TAG, "UM89 Socket bound, port %d", PORT);
+    // ESP_LOGI(TAG, "UM89 Socket bound, port %d", PORT);
 
     err = listen(listen_sock, 1);
     if (err != 0)
     {
-        //ESP_LOGE(TAG, "UM94 Error occurred during listen: errno %d", errno);
+        // ESP_LOGE(TAG, "UM94 Error occurred during listen: errno %d", errno);
         goto CLEAN_UP;
     }
     /*
@@ -132,15 +132,13 @@ static void tcp_server_task(void *pvParameters)
     */
     while (1)
     {
-        
 
-        
         struct sockaddr_in6 source_addr; // Large enough for both IPv4 or IPv6
         uint addr_len = sizeof(source_addr);
         sock = accept(listen_sock, (struct sockaddr *)&source_addr, &addr_len);
         if (sock < 0)
         {
-            //ESP_LOGE(TAG, "UM108 Unable to accept connection: errno %d", errno);
+            // ESP_LOGE(TAG, "UM108 Unable to accept connection: errno %d", errno);
             break;
         }
         /*
@@ -157,28 +155,29 @@ static void tcp_server_task(void *pvParameters)
         {
             inet6_ntoa_r(source_addr.sin6_addr, addr_str, sizeof(addr_str) - 1);
         }
-        //ESP_LOGI(TAG, "UM122 Socket accepted ip address: %s", addr_str);
-/*
-        #ifdef TCP_TASK_DEBUG
-        //printf("\nbefore the delay 117\n");
-        //vTaskDelay(1000 / portTICK_PERIOD_MS);
-        //printf("\nwe will dump 119\n");
-        ESP_ERROR_CHECK(heap_trace_stop());
-        heap_trace_dump();
-        //printf("\ndumped 119\n");
-        //vTaskDelay(1000 / portTICK_PERIOD_MS);
-        //printf("\nstart again 119\n");
-        #endif
-  */      //socket accepted
+        // ESP_LOGI(TAG, "UM122 Socket accepted ip address: %s", addr_str);
+        /*
+                #ifdef TCP_TASK_DEBUG
+                //printf("\nbefore the delay 117\n");
+                //vTaskDelay(1000 / portTICK_PERIOD_MS);
+                //printf("\nwe will dump 119\n");
+                ESP_ERROR_CHECK(heap_trace_stop());
+                heap_trace_dump();
+                //printf("\ndumped 119\n");
+                //vTaskDelay(1000 / portTICK_PERIOD_MS);
+                //printf("\nstart again 119\n");
+                #endif
+          */
+        // socket accepted
         socket_transmission(sock);
 
         shutdown(sock, 0);
         close(sock);
-        
-        //gpio_set_level(GPIO_YELLOW_OUT, 0);
+
+        // gpio_set_level(GPIO_YELLOW_OUT, 0);
     }
 CLEAN_UP:
-    //printf("M147 clean up\n");
+    // printf("M147 clean up\n");
     close(listen_sock);
     vTaskDelete(NULL);
 }
@@ -187,10 +186,10 @@ void task2()
 {
 
     vTaskDelay(500 / portTICK_PERIOD_MS);
-    init_init(); //init all the HAL level
+    init_init(); // init all the HAL level
     LCD_Clear();
     LCD_String("Initializing...");
-    char data[DATA_SIZE]; //data from tcp
+    char data[DATA_SIZE]; // data from tcp
     char time[7];
     char serial[SERIAL_NUMBER_SIZE + SERIAL_CONSTRAINS];
     char serial_number_from_scanner[SERIAL_NUMBER_SIZE];
@@ -198,22 +197,19 @@ void task2()
     char logs_data[LOGS_DATA_SIZE];
     char just_serial[SERIAL_NUMBER_SIZE];
     char barcode[13];
-    //varialbe for each message
+    // varialbe for each message
     char data1[1024];
     char mw[LOGS_DATA_SIZE];
     char m2[LOGS_DATA_SIZE];
     char m3[LOGS_DATA_SIZE];
     char m4[LOGS_DATA_SIZE];
-    memset(data1,0,1024);
+    memset(data1, 0, 1024);
     read_file("D1", data1, 1024);
     char m5[LOGS_DATA_SIZE];
     char m6[LOGS_DATA_SIZE];
     char m7[LOGS_DATA_SIZE];
     char switch_state[8];
     char panel_state[8];
-  
-
- 
 
     uint32_t iterator;
     uint32_t card_counter;
@@ -222,7 +218,7 @@ void task2()
     bool flag_time = false;
     bool flag_counter = false;
     bool flag_ticket = false;
-    
+
     bool flag_serial = false;
 
     bool flag_switch = true;
@@ -278,12 +274,12 @@ void task2()
         sprintf(m5, "Wrong ID                                DEFAULT");
     if (!read_file("M6", m6, LOGS_DATA_SIZE))
         sprintf(m6, "Expired ID                              DEFAULT");
-    ////printf("\nwelcome 244\n");    
+    ////printf("\nwelcome 244\n");
     LCD_Clear();
     LCD_String("Done");
     if (!read_file("M7", m7, LOGS_DATA_SIZE))
         sprintf(m7, "Used ID                                 DEFAULT");
-    get_time(time);    
+    get_time(time);
 
     ////printf("\nwelcome 252\n");
     while (1)
@@ -297,7 +293,6 @@ void task2()
 
         flag_ticket = true;
 
-
         if (!flag_pause)
         {
             //////printf("flage switch vlaue : (%d)", flag_switch);
@@ -307,14 +302,15 @@ void task2()
                 if (!gpio_get_level(GPIO_DRY_CONTACT_IN) || !flag_switch)
                 {
                     vTaskDelay(DEBOUNCE_DELAY / portTICK_PERIOD_MS);
-                    //gpio_set_level(GPIO_GREEN_OUT, 1);
-                    if(flag_switch){
-                        //printf("\nwelcome\n");
-                        //printf("\nkokoko318\n");
+                    // gpio_set_level(GPIO_GREEN_OUT, 1);
+                    if (flag_switch)
+                    {
+                            printf("\nwelcome\n");
+                        // printf("\nkokoko318\n");
                         LCD_Clear();
                         LCD_String(mw);
+                        //esp_log_write(ESP_LOG_WARN, "main", "%s", mw);
                     }
-                    
 
                     while (!gpio_get_level(GPIO_DRY_CONTACT_IN) || !flag_switch)
                     {
@@ -329,17 +325,17 @@ void task2()
                                 LCD_Clear();
 
                                 LCD_String(m2);
-                                   /*
-                                if (sock > 0)
-                                {
-                                    m2[strlen(m2)] = '\n';
-                                    socket_tx(strlen(m2), sock, m2);
-                                    m2[strlen(m2) - 1] = 0;
-                                }
-                                    */
+                                /*
+                             if (sock > 0)
+                             {
+                                 m2[strlen(m2)] = '\n';
+                                 socket_tx(strlen(m2), sock, m2);
+                                 m2[strlen(m2) - 1] = 0;
+                             }
+                                 */
                                 vTaskDelay(10 / portTICK_PERIOD_MS);
                                 get_time(time);
-                                //vTaskSuspend(xEthHandle);
+                                // vTaskSuspend(xEthHandle);
                                 vTaskDelay(1 / portTICK_PERIOD_MS);
                                 barcode[0] = time[0] % 10 + 48;
                                 barcode[1] = time[0] / 10 + 48;
@@ -362,30 +358,31 @@ void task2()
                                 sprintf(logs_data, "%s,C,%02d/%02d,%02d:%02d\n", barcode, time[4], time[5], time[2], time[1]);
                                 append_file(file_name_buffer, logs_data);
                                 write_file("N", logs_data);
-                                    /*
-                                if (sock > 0)
-                                    socket_tx(strlen(logs_data), sock, logs_data);
-                                    */
+                                /*
+                            if (sock > 0)
+                                socket_tx(strlen(logs_data), sock, logs_data);
+                                */
                                 memset(logs_data, 0, LOGS_DATA_SIZE);
                                 //////////////////////////////////////
                                 vTaskDelay(1 / portTICK_PERIOD_MS);
-                                //vTaskResume(xEthHandle);
-                               
+                                // vTaskResume(xEthHandle);
+
                                 iterator = 0;
                                 vTaskDelay(100 / portTICK_PERIOD_MS);
                                 ////printf("\nplease take the ticket....\n");
                                 LCD_Clear();
 
                                 LCD_String(m3);
-                                    /*
-                                if (sock > 0)
-                                {
-                                    m3[strlen(m3)] = '\n';
-                                    socket_tx(strlen(m3), sock, m3);
-                                    m3[strlen(m3) - 1] = 0;
-                                }
-                                        */
-                                //gpio_set_level(GPIO_GREEN_OUT, 0);
+                                //("MAIN", "%s", m3);
+                                /*
+                            if (sock > 0)
+                            {
+                                m3[strlen(m3)] = '\n';
+                                socket_tx(strlen(m3), sock, m3);
+                                m3[strlen(m3) - 1] = 0;
+                            }
+                                    */
+                                // gpio_set_level(GPIO_GREEN_OUT, 0);
                                 while (!(/*Ticket removed -- ALWAYS NOT REMOVED ==0*/ 0) && iterator < MAXIMUM_WAIT_TIME)
                                 {
                                     vTaskDelay(200 / portTICK_PERIOD_MS);
@@ -406,7 +403,7 @@ void task2()
                                 }
                                 else
                                 {
-                                    //ticket is not removed
+                                    // ticket is not removed
                                     iterator = 0;
                                     gpio_set_level(GPIO_RELAY_OUT, 1);
                                     while ((!gpio_get_level(GPIO_DRY_CONTACT_IN) || !flag_switch) && iterator < MAXIMUM_DOOR_TIME)
@@ -420,7 +417,7 @@ void task2()
                                 }
                             }
                         }
-                        else if ((uart1_serial_read(serial_number_from_scanner) > 0) && flag_ticket) //serial number reading
+                        else if ((uart1_serial_read(serial_number_from_scanner) > 0) && flag_ticket) // serial number reading
                         {
                             LCD_Clear();
                             LCD_String("Reading...");
@@ -451,12 +448,12 @@ void task2()
                                     serial_number_from_scanner[strlen(serial_number_from_scanner)] = '0';
                                 }
                                 sprintf(logs_data, "Serial => %s\n", serial_number_from_scanner);
-                                    /*
-                                if (sock > 0)
-                                    socket_tx(strlen(logs_data), sock, logs_data);
-                                    */
+                                /*
+                            if (sock > 0)
+                                socket_tx(strlen(logs_data), sock, logs_data);
+                                */
                                 memset(logs_data, 0, LOGS_DATA_SIZE);
-                                //779B5600 to reset IP
+                                // 779B5600 to reset IP
                                 sprintf(just_serial, "779B5600");
                                 cmp = strcmp(just_serial, serial_number_from_scanner);
                                 if (cmp == 0)
@@ -531,24 +528,24 @@ void task2()
                                             ////printf("\nplease enter\n");
                                             LCD_Clear();
                                             LCD_String(m4);
-                                                /*
-                                            if (sock > 0)
-                                            {
-                                                m4[strlen(m4)] = '\n';
-                                                flag_sock = socket_tx(strlen(m4), sock, m4);
-                                                m4[strlen(m4) - 1] = 0;
-                                            }
-                                                */
+                                            /*
+                                        if (sock > 0)
+                                        {
+                                            m4[strlen(m4)] = '\n';
+                                            flag_sock = socket_tx(strlen(m4), sock, m4);
+                                            m4[strlen(m4) - 1] = 0;
+                                        }
+                                            */
                                             gpio_set_level(GPIO_RELAY_OUT, 1);
                                             get_time(time);
                                             sprintf(file_name_buffer, "L");
                                             sprintf(logs_data, "%s,T,%02d/%02d,%02d:%02d\n", serial_number_from_scanner, time[4], time[5], time[2], time[1]);
                                             append_file(file_name_buffer, logs_data);
                                             write_file("N", logs_data);
-                                                /*
-                                            if (sock > 0)
-                                                socket_tx(strlen(logs_data), sock, logs_data);
-                                                    */
+                                            /*
+                                        if (sock > 0)
+                                            socket_tx(strlen(logs_data), sock, logs_data);
+                                                */
                                             memset(logs_data, 0, LOGS_DATA_SIZE);
                                             iterator = 0;
                                             while ((!gpio_get_level(GPIO_DRY_CONTACT_IN) || !flag_switch) && iterator < MAXIMUM_DOOR_TIME)
@@ -559,7 +556,7 @@ void task2()
                                             gpio_set_level(GPIO_RELAY_OUT, 0);
                                             iterator = 0;
                                             memset(serial, 0, SERIAL_NUMBER_SIZE + SERIAL_CONSTRAINS);
-                                            //memset(serial_number_from_scanner, 0, SERIAL_NUMBER_SIZE);
+                                            // memset(serial_number_from_scanner, 0, SERIAL_NUMBER_SIZE);
                                             LCD_Clear();
                                         }
                                     }
@@ -571,23 +568,23 @@ void task2()
                                         ////printf("\nserial not found\n");
                                         LCD_Clear();
                                         LCD_String(m5);
-                                                        /*
-                                        if (sock > 0)
-                                        {
-                                            m5[strlen(m5)] = '\n';
-                                            flag_sock = socket_tx(strlen(m5), sock, m5);
-                                            m5[strlen(m5) - 1] = 0;
-                                        }
-                                                */
+                                        /*
+                        if (sock > 0)
+                        {
+                            m5[strlen(m5)] = '\n';
+                            flag_sock = socket_tx(strlen(m5), sock, m5);
+                            m5[strlen(m5) - 1] = 0;
+                        }
+                                */
                                         get_time(time);
                                         sprintf(file_name_buffer, "L");
                                         sprintf(logs_data, "%s,F,%02d/%02d,%02d:%02d\n", serial_number_from_scanner, time[4], time[5], time[2], time[1]);
                                         append_file(file_name_buffer, logs_data);
                                         write_file("N", logs_data);
-                                                    /*
-                                        if (sock > 0)
-                                            socket_tx(strlen(logs_data), sock, logs_data);
-                                                        */
+                                        /*
+                            if (sock > 0)
+                                socket_tx(strlen(logs_data), sock, logs_data);
+                                            */
                                         memset(logs_data, 0, LOGS_DATA_SIZE);
                                     }
                                     else if (!flag_time)
@@ -603,10 +600,10 @@ void task2()
                                         sprintf(logs_data, "%s,E,%02d/%02d,%02d:%02d\n", serial_number_from_scanner, time[4], time[5], time[2], time[1]);
                                         append_file(file_name_buffer, logs_data);
                                         write_file("N", logs_data);
-                                            /*
-                                        if (sock > 0)
-                                            socket_tx(strlen(logs_data), sock, logs_data);
-                                            */
+                                        /*
+                                    if (sock > 0)
+                                        socket_tx(strlen(logs_data), sock, logs_data);
+                                        */
                                         memset(logs_data, 0, LOGS_DATA_SIZE);
                                     }
                                     else if (!flag_counter)
@@ -635,10 +632,9 @@ void task2()
                             memset(serial_number_from_scanner, 0, SERIAL_NUMBER_SIZE);
                             uart_flush_input(UART_NUM_1);
                         }
-                        if(!flag_switch)
+                        if (!flag_switch)
                             break;
                     }
-
                 }
             }
             else
@@ -692,15 +688,9 @@ void task2()
             LCD_String(".");
             vTaskDelay(500 / portTICK_PERIOD_MS);
             LCD_String(".");
-            
-
-
-
         }
-        
     }
 }
-
 
 void app_main(void)
 {
@@ -711,7 +701,7 @@ void app_main(void)
     */
 
     ESP_ERROR_CHECK(nvs_flash_init());
-    
+
     bt_init_fn();
 
     ESP_ERROR_CHECK(esp_netif_init());
@@ -727,9 +717,8 @@ void app_main(void)
 
     enc_init();
 
-    
-    xTaskCreatePinnedToCore(task2,              "task2",        16384,  NULL,   3,  NULL,   0);
-    xTaskCreatePinnedToCore(tcp_server_task,    "tcp_server",   16384,  NULL,   5,  NULL,   1);
+    xTaskCreatePinnedToCore(task2, "task2", 16384, NULL, 3, NULL, 0);
+    xTaskCreatePinnedToCore(tcp_server_task, "tcp_server", 16384, NULL, 5, NULL, 1);
     /*
     if (xEthHandle == NULL)
     {
