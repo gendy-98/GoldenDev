@@ -25,7 +25,8 @@ void uart2_send_data(char *time, char *data, char *barcode)
     char time_buffer[16];
     char line[64];
     memset(line,0,64);
-    char command[8];
+    char command[64];
+    memset(command,0,64);
     time_buffer[8] = 0;
     char date_buffer[16];
     date_buffer[10] = 0;
@@ -34,45 +35,105 @@ void uart2_send_data(char *time, char *data, char *barcode)
     int i = 0;
     int j = 0;
     int k = 0;
-    //printf("\nin uart printer\n");
+    ////printf("\nin uart printer\n");
     data[strlen(data)] = 0;
     if (strlen(data) != 0)
     {
-        //printf("\n data  is %s  strlen = %d\n", data,strlen(data));
+        ////printf("\n data  is %s  strlen = %d\n", data,strlen(data));
 
         while (data[i] != 0)
         {
             
             j = 0;
             memset(line,0,64);
+            //printf("line =");
             while (data[i] != '\n' && data[i] != '\0' && j < 64)
             {
                 line[j] = data[i];
+                //printf("%c", line[j]);
                 j++;
                 i++;
+                
             }
-
-            //printf("\nline from data %s\n",line);
+            //printf("\n");
+            ////printf("\nline from data %s\n",line);
             if (line[0] == '<')
             {
                 if (line[1] == 'D' && line[2] == 'A' && line[3] == 'T' && line[4] == 'E' && line[5] == '>')
                 {
-                    //printf("\ncommand DATE %s\n",date_buffer);
+                    ////printf("\ncommand DATE %s\n",date_buffer);
+                    //printf("\n date =");
+                    
+                    //printf("\n");
                     uart_write_bytes(UART_NUM_2, (const char *)date_buffer, strlen((const char *)date_buffer) + 1);
                     memset(line,0,64);
                 }
                 else if (line[1] == 'T' && line[2] == 'I' && line[3] == 'M' && line[4] == 'E' && line[5] == '>')
                 {
-                    //printf("\ncommand TIME %s\n",time_buffer);
+                    ////printf("\ncommand TIME %s\n",time_buffer);
+                    //printf("\n tine =");
+                    
+                    //printf("\n");
                     uart_write_bytes(UART_NUM_2, (const char *)time_buffer, strlen((const char *)time_buffer) + 1);
                     memset(line,0,64);
                 }
-                else if (line[1] == 'C' && line[2] == 'O' && line[3] == 'D' && line[4] == 'E' && line[5] == '>')
+                else if (line[1] == 'C' && line[2] == 'O' && line[3] == 'D' && line[4] == 'E')
                 {
-                    //printf("\ncommand CODE %s\n",barcode);
-
-                    uart_write_bytes(UART_NUM_2, (const char *)barcode, strlen((const char *)barcode) + 1);
+                    if(line[5] == '>'){
+                        //printf("\n barcode =");
+                    
+                    //printf("\n");
+                        uart_write_bytes(UART_NUM_2, (const char *)barcode, strlen((const char *)barcode) + 1);
+                        memset(line,0,64);
+                    }
+                    else{
+                        k = 5;
+            if(line[k] == ',') k++;
+            //printf("\ncommand k %c\n",line[k]);
+                    j = 0;
+                    while (line[k] != '>')
+                    {
+                        if (line[k] <= '9' && line[k] >= '0')
+                        {
+                            command[j] = (line[k] - '0') * 16;
+                        }
+                        else if (line[k] <= 'F' && line[k] >= 'A')
+                        {
+                            command[j] = (line[k] - 'A' + 10) * 16;
+                        }
+                        if (line[k + 1] <= '9' && line[k + 1] >= '0')
+                        {
+                            command[j] += line[k + 1] - '0';
+                        }
+                        else if (line[k + 1] <= 'F' && line[k + 1] >= 'A')
+                        {
+                            command[j] += line[k + 1] - 'A' + 10;
+                        }
+                        if (line[k + 2] == ',')
+                        {
+                            k += 3;
+                            j++;
+                        }
+                        else
+                        {
+                            k += 3;
+                            j++;
+                            break;
+                        }
+                    }
+			        memcpy(&command[j], barcode, strlen((const char *)barcode) + 1);
+                    //printf("\ncommand COMMAND \"%s\"\n",command);
+                    //printf("\ncomand code =");
+                    
+                    //printf("\n");
+                    uart_write_bytes(UART_NUM_2, (const char *)command, j + 1 + strlen((const char *)barcode));
+                    memset(command,0,64);
+                    j = 0;
                     memset(line,0,64);
+                    }
+			
+                
+                    
                 }
                 else
                 {
@@ -108,9 +169,12 @@ void uart2_send_data(char *time, char *data, char *barcode)
                             break;
                         }
                     }
-                    //printf("\ncommand COMMAND %s\n",command);
+                    ////printf("\ncommand COMMAND %s\n",command);
+                    //printf("\ncommand pure =");
+                    
+                    //printf("\n");
                     uart_write_bytes(UART_NUM_2, (const char *)command, j + 1);
-                    memset(line,0,64);
+                    memset(command,0,64);
                     j = 0;
                 }
             }
@@ -118,8 +182,13 @@ void uart2_send_data(char *time, char *data, char *barcode)
             {
                 line[j] = 10;
                 line[j + 1] = 0;
-                //printf("\ncommand NOT COMMAND %s\n",line);
+                ////printf("\ncommand NOT COMMAND %s\n",line);
+                //printf("\n last else =");
+                    
+                    //printf("\n");
                 uart_write_bytes(UART_NUM_2, (const char *)line, strlen((const char *)line) + 1);
+                    memset(line,0,64);
+
             }
             i++;
         }
@@ -186,12 +255,12 @@ void uart2_send_data(char *time, char *data, char *barcode)
 	
     vTaskDelay(1 / portTICK_PERIOD_MS);    
     uart_write_bytes(UART_NUM_2, (const char *)data3, strlen((const char *)data3) + 1);
-	//printf("data 3 :%s\n",data3);
+	////printf("data 3 :%s\n",data3);
     vTaskDelay(1 / portTICK_PERIOD_MS);
     uart_write_bytes(UART_NUM_2, (const char *)lf_2_command, strlen((const char *)lf_2_command) + 1);
     
     memset(data6, 0, 256);
-    sprintf(data6, "%s%s%s", middle_command,
+    s//printf(data6, "%s%s%s", middle_command,
             barcode_command,
             barcode);
     

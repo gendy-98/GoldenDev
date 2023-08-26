@@ -223,10 +223,15 @@ void socket_transmission(const int sock)
                 break;
             case 's':
             case 'S':
-
                 sprintf(buffer, "Formating file system... \n");
                 //printf("%s", buffer);
                 socket_tx(strlen(buffer), sock, buffer);
+                if (read_file("IP", data, IP_GW_NM))
+                {
+                    sprintf(buffer, "IP stored. \n");
+                    //printf("%s", buffer);
+                    socket_tx(strlen(buffer), sock, buffer);
+                }
                 ret = esp_spiffs_format(NULL);
 
                 if (ret == ESP_OK)
@@ -234,6 +239,7 @@ void socket_transmission(const int sock)
                     sprintf(buffer, "Done \n");
                     //printf("%s", buffer);
                     socket_tx(strlen(buffer), sock, buffer);
+                    
                 }
                 else
                 {
@@ -241,7 +247,14 @@ void socket_transmission(const int sock)
                     //printf("%s", buffer);
                     socket_tx(strlen(buffer), sock, buffer);
                 }
-
+                if (strlen(data) == IP_GW_NM)
+                {
+                    write_file("IP", data);
+                    sprintf(buffer, "IP retrived. \n");
+                    //printf("%s", buffer);
+                    socket_tx(strlen(buffer), sock, buffer);
+                    memset(buffer, 0, BUFFER_SIZE);
+                }
                 break;
             case 'p':
             case 'P':
@@ -256,7 +269,7 @@ void socket_transmission(const int sock)
                 
                 esp_spiffs_info(NULL, &total, &used);
                 
-                sprintf(data_buffer, "Partition size: total: %d, used: %d \n", total, used);
+                sprintf(data_buffer, "Partition size: total: %f MB, used: %f MB\n", (((float)total/1024)/1024), (((float)used/1024)/1024));
                 socket_tx(strlen(data_buffer), sock, data_buffer);
                 memset(data_buffer, 0, DATA_SIZE + DATA_EXTENTION);
                 break;
