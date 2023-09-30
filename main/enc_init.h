@@ -17,6 +17,7 @@
 #include "esp_netif.h"
 #include "driver/gpio.h"
 #include "enc28j60.h"
+#include "esp_eth_enc28j60.h"
 //#include "protocol_examples_common.h"
 
 #include "lwip/err.h"
@@ -37,7 +38,7 @@
 
 #include "funcs.h"
 
-static const char *TAG = "TCP/IP enc init";
+//static const char *TAG = "TCP/IP enc init";
 
 void enc_init();
 

@@ -66,6 +66,7 @@ void enc_init()
 
     // Set default handlers to process TCP/IP stuffs
     ESP_ERROR_CHECK(esp_eth_set_default_handlers(eth_netif)); //
+    //ESP_ERROR_CHECK(esp_netif_attach(eth_netif, esp_eth_new_netif_glue(eth_handle)));
     // Register user defined event handers
     ESP_ERROR_CHECK(esp_event_handler_register(ETH_EVENT, ESP_EVENT_ANY_ID, &eth_event_handler, NULL));
     ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_ETH_GOT_IP, &got_ip_event_handler, NULL)); //
@@ -130,7 +131,7 @@ void enc_init()
     }
     //uncomment to force full duplex as well as line 776 in esp_eth_mac_enc28j60.c 
     //and 104 in esp_eth_phy_enc28j60.c
-    /*
+    enc28j60_set_phy_duplex(phy, ETH_DUPLEX_FULL);
     ret = mac->set_duplex(mac, ETH_DUPLEX_FULL);
     if(ret == ESP_OK)
     {
@@ -140,7 +141,8 @@ void enc_init()
     {
         ESP_LOGW(TAG, "set_duplex Fail");
     }
-    */
+    
+    
 
     /* attach Ethernet driver to TCP/IP stack */
     ESP_ERROR_CHECK(esp_netif_attach(eth_netif, esp_eth_new_netif_glue(eth_handle)));
@@ -174,7 +176,7 @@ void eth_event_handler(void *arg, esp_event_base_t event_base,
         ESP_LOGI(TAG, "EI139 Ethernet Link Up");
         ESP_LOGI(TAG, "EI140 Ethernet HW Addr %02x:%02x:%02x:%02x:%02x:%02x",
             mac_addr[0], mac_addr[1], mac_addr[2], mac_addr[3], mac_addr[4], mac_addr[5]);
-        mac_addr[0]=1;
+        //mac_addr[0]=1;
 
         esp_eth_ioctl(eth_handle, ETH_CMD_G_SPEED, mac_addr);
         if (mac_addr[0] == ETH_SPEED_10M)

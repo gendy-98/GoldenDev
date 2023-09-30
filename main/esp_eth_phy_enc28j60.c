@@ -18,6 +18,7 @@
 #include "esp_log.h"
 #include "esp_eth.h"
 #include "eth_phy_regs_struct.h"
+#include "esp_eth_enc28j60.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "driver/gpio.h"
@@ -34,6 +35,24 @@ static const char *TAG = "enc28j60 phy";
     } while (0)
 
 /***************Vendor Specific Register***************/
+
+/**
+ * @brief PHCON2(PHY Control Register 2)
+ *
+ */
+typedef union {
+    struct {
+        uint32_t reserved_7_0 : 8;  // Reserved
+        uint32_t pdpxmd : 1;        // PHY Duplex Mode bit
+        uint32_t reserved_10_9: 2;  // Reserved
+        uint32_t ppwrsv: 1;         // PHY Power-Down bit
+        uint32_t reserved_13_12: 2; // Reserved
+        uint32_t ploopbk: 1;        // PHY Loopback bit
+        uint32_t prst: 1;           // PHY Software Reset bit
+    };
+    uint32_t val;
+} phcon1_reg_t;
+#define ETH_PHY_PHCON1_REG_ADDR (0x00)
 
 /**
  * @brief PHCON2(PHY Control Register 2)
@@ -87,7 +106,7 @@ static esp_err_t enc28j60_update_link_duplex_speed(phy_enc28j60_t *enc28j60)
 {
     esp_eth_mediator_t *eth = enc28j60->eth;
     eth_speed_t speed = ETH_SPEED_10M; // enc28j60 speed is fixed to 10Mbps
-    eth_duplex_t duplex = ETH_DUPLEX_HALF;
+    eth_duplex_t duplex = ETH_DUPLEX_FULL;
     phstat2_reg_t phstat;
     PHY_CHECK(eth->phy_reg_read(eth, enc28j60->addr, ETH_PHY_PHSTAT2_REG_ADDR, &(phstat.val)) == ESP_OK,
               "read PHSTAT2 failed", err);
@@ -104,6 +123,7 @@ static esp_err_t enc28j60_update_link_duplex_speed(phy_enc28j60_t *enc28j60)
             //uncomment to force full duplex as well as line 776 in esp_eth_mac_enc28j60.c 
             //and 131 in enc_init.c
             //duplex = ETH_DUPLEX_FULL;
+            ESP_LOGE("TAG","duplex = %s", duplex == ETH_DUPLEX_FULL ? "ETH_DUPLEX_FULL" : "ETH_DUPLEX_HALF" );
             PHY_CHECK(eth->on_state_changed(eth, ETH_STATE_SPEED, (void *)speed) == ESP_OK,
                       "change speed failed", err);
             PHY_CHECK(eth->on_state_changed(eth, ETH_STATE_DUPLEX, (void *)duplex) == ESP_OK,
@@ -171,7 +191,8 @@ static esp_err_t enc28j60_reset_hw(esp_eth_phy_t *phy)
     phy_enc28j60_t *enc28j60 = __containerof(phy, phy_enc28j60_t, parent);
     // set reset_gpio_num minus zero can skip hardware reset phy chip
     if (enc28j60->reset_gpio_num >= 0) {
-        gpio_pad_select_gpio(enc28j60->reset_gpio_num);
+        //gpio_pad_select_gpio(enc28j60->reset_gpio_num);
+        gpio_reset_pin(enc28j60->reset_gpio_num);
         gpio_set_direction(enc28j60->reset_gpio_num, GPIO_MODE_OUTPUT);
         gpio_set_level(enc28j60->reset_gpio_num, 0);
         gpio_set_level(enc28j60->reset_gpio_num, 1);
@@ -190,6 +211,35 @@ static esp_err_t enc28j60_negotiate(esp_eth_phy_t *phy)
      */
     phy_enc28j60_t *enc28j60 = __containerof(phy, phy_enc28j60_t, parent);
     /* Updata information about link, speed, duplex */
+    PHY_CHECK(enc28j60_update_link_duplex_speed(enc28j60) == ESP_OK, "update link duplex speed failed", err);
+    return ESP_OK;
+err:
+    return ESP_FAIL;
+}
+
+esp_err_t enc28j60_set_phy_duplex(esp_eth_phy_t *phy, eth_duplex_t duplex)
+{
+    phy_enc28j60_t *enc28j60 = __containerof(phy, phy_enc28j60_t, parent);
+    esp_eth_mediator_t *eth = enc28j60->eth;
+    phcon1_reg_t phcon1;
+
+    PHY_CHECK(eth->phy_reg_read(eth, enc28j60->addr, 0, &phcon1.val) == ESP_OK,
+              "read PHCON1 failed", err);
+    switch (duplex) {
+    case ETH_DUPLEX_HALF:
+        phcon1.pdpxmd = 0;
+        break;
+    case ETH_DUPLEX_FULL:
+        phcon1.pdpxmd = 1;
+        break;
+    default:
+        PHY_CHECK(false, "unknown duplex", err);
+        break;
+    }
+
+    PHY_CHECK(eth->phy_reg_write(eth, enc28j60->addr, 0, phcon1.val) == ESP_OK,
+              "write PHCON1 failed", err);
+
     PHY_CHECK(enc28j60_update_link_duplex_speed(enc28j60) == ESP_OK, "update link duplex speed failed", err);
     return ESP_OK;
 err:
