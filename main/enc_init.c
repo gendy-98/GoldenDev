@@ -1,5 +1,5 @@
 #include "enc_init.h"
-
+static const char *TAG = "ENC28J60";
 
 void enc_init()
 {
@@ -32,8 +32,8 @@ void enc_init()
         IP_data[1] = 168;
         IP_data[2] = 2;
         IP_data[3] = 50;
-        IP_data[4] = 225;
-        IP_data[5] = 225;
+        IP_data[4] = 255;
+        IP_data[5] = 255;
         IP_data[6] = 255;
         IP_data[7] = 0;
         IP_data[8] = 192;
